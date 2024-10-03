@@ -87,36 +87,68 @@
         startCamera();
 
         // Funktion zum Scannen und Erkennen von Objekten
-        async function scanObject() {
-            if (!model) {
-                console.log('Modell noch nicht geladen');
-                return;
+       // Funktion zum Scannen und Erkennen von Objekten
+async function scanObject() {
+    if (!model) {
+        console.log('Modell noch nicht geladen');
+        return;
+    }
+
+    result.innerHTML = '<p>Scanne Objekt...</p>';
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        console.log('Führe Objekterkennung durch...');
+        const predictions = await model.detect(canvas);
+        console.log('Erkennungsergebnisse:', predictions);
+
+        if (predictions.length > 0) {
+            const topPrediction = predictions[0];
+            console.log('Erkanntes Objekt:', topPrediction.class);
+            
+            // Prüfen, ob das erkannte Objekt ein Becher/Cup ist
+            if (topPrediction.class.toLowerCase() === 'cup') {
+                await unlockContent(topPrediction.class);
+            } else {
+                result.innerHTML = '<p>Das passt leider nicht 😕</p>';
             }
-
-            result.innerHTML = '<p>Scanne Objekt...</p>';
-
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                console.log('Führe Objekterkennung durch...');
-                const predictions = await model.detect(canvas);
-                console.log('Erkennungsergebnisse:', predictions);
-
-                if (predictions.length > 0) {
-                    const topPrediction = predictions[0];
-                    console.log('Erkanntes Objekt:', topPrediction.class);
-                    await unlockContent(topPrediction.class);
-                } else {
-                    result.innerHTML = '<p>Kein Objekt erkannt. Bitte versuchen Sie es erneut.</p>';
-                }
-            } catch (error) {
-                console.error('Fehler bei der Objekterkennung:', error);
-                result.innerHTML = '<p>Fehler bei der Objekterkennung. Bitte versuchen Sie es erneut.</p>';
-            }
+        } else {
+            result.innerHTML = '<p>Kein Objekt erkannt. Bitte versuchen Sie es erneut.</p>';
         }
+    } catch (error) {
+        console.error('Fehler bei der Objekterkennung:', error);
+        result.innerHTML = '<p>Fehler bei der Objekterkennung. Bitte versuchen Sie es erneut.</p>';
+    }
+}
+
+// Funktion zum Abrufen des exklusiven Contents
+async function unlockContent(objectClass) {
+    try {
+        console.log('Rufe Content für Objekt ab:', objectClass);
+        const response = await fetch(`/api/unlock-content?object=${objectClass}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Erhaltene Daten:', data);
+        
+        result.innerHTML = `
+            <h2>Erfolgreich freigeschaltet! 🎉</h2>
+            <h3>Exklusiver Inhalt für ${objectClass}:</h3>
+            <p>${data.content}</p>
+            <a href="${data.url}" target="_blank">Zum exklusiven Inhalt</a>
+        `;
+    } catch (error) {
+        console.error('Fehler beim Abrufen des Inhalts:', error);
+        result.innerHTML = '<p>Fehler beim Freischalten des Inhalts. Bitte versuchen Sie es erneut.</p>';
+    }
+}
 
         // Funktion zum Abrufen des exklusiven Contents
         async function unlockContent(objectClass) {
