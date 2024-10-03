@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Objekt-Scanner PWA</title>
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -39,8 +41,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
 <body>
     <h1>Objekt-Scanner</h1>
@@ -49,75 +49,101 @@
     <div id="result"></div>
 
     <script>
-       // 1. Objekterkennung mit TensorFlow.js
-// Fügen Sie dies im <head> Ihrer index.html hinzu:
-// <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-// <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+        // Überprüfen und registrieren des Service Workers
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => console.log('Service Worker registriert'))
+                .catch(error => console.log('Service Worker Registrierung fehlgeschlagen:', error));
+        }
 
-let model;
+        let model;
+        const video = document.getElementById('videoElement');
+        const scanButton = document.getElementById('scanButton');
+        const result = document.getElementById('result');
 
-// Laden Sie das Modell, wenn die Seite geladen ist
-window.addEventListener('load', async () => {
-  model = await cocoSsd.load();
-  console.log('Modell geladen');
-});
+        // Laden Sie das Modell, wenn die Seite geladen ist
+        window.addEventListener('load', async () => {
+            try {
+                console.log('Lade Modell...');
+                model = await cocoSsd.load();
+                console.log('Modell erfolgreich geladen');
+            } catch (error) {
+                console.error('Fehler beim Laden des Modells:', error);
+            }
+        });
 
-// Funktion zum Scannen und Erkennen von Objekten
-async function scanObject() {
-  if (!model) {
-    console.log('Modell noch nicht geladen');
-    return;
-  }
+        // Kamerazugriff
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                console.log('Kamera erfolgreich gestartet');
+            } catch (error) {
+                console.error('Fehler beim Zugriff auf die Kamera:', error);
+                result.textContent = 'Kamerazugriff nicht möglich. Bitte überprüfen Sie Ihre Berechtigungen.';
+            }
+        }
 
-  result.innerHTML = '<p>Scanne Objekt...</p>';
+        startCamera();
 
-  // Nehmen Sie ein Bild von der Kamera auf
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Funktion zum Scannen und Erkennen von Objekten
+        async function scanObject() {
+            if (!model) {
+                console.log('Modell noch nicht geladen');
+                return;
+            }
 
-  // Führen Sie die Objekterkennung durch
-  const predictions = await model.detect(canvas);
+            result.innerHTML = '<p>Scanne Objekt...</p>';
 
-  if (predictions.length > 0) {
-    // Nehmen Sie das Objekt mit der höchsten Konfidenz
-    const topPrediction = predictions[0];
-    await unlockContent(topPrediction.class);
-  } else {
-    result.innerHTML = '<p>Kein Objekt erkannt. Bitte versuchen Sie es erneut.</p>';
-  }
-}
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
-// Funktion zum Abrufen des exklusiven Contents
-async function unlockContent(objectClass) {
-  try {
-    // Ersetzen Sie URL durch Ihre tatsächliche API-URL
-    async function unlockContent(objectClass) {
-  try {
-    const response = await fetch(`/api/unlock-content?object=${objectClass}`);
-    
-    if (!response.ok) {
-      throw new Error('Netzwerkantwort war nicht ok');
-    }
-    
-    const data = await response.json();
-    
-    result.innerHTML = `
-      <h2>Objekt erkannt: ${objectClass}</h2>
-      <h3>Exklusiver Inhalt freigeschaltet!</h3>
-      <p>${data.content}</p>
-      <a href="${data.url}" target="_blank">Zum exklusiven Inhalt</a>
-    `;
-  } catch (error) {
-    console.error('Fehler beim Abrufen des Inhalts:', error);
-    result.innerHTML = '<p>Fehler beim Freischalten des Inhalts. Bitte versuchen Sie es erneut.</p>';
-  }
-}
-}
+                console.log('Führe Objekterkennung durch...');
+                const predictions = await model.detect(canvas);
+                console.log('Erkennungsergebnisse:', predictions);
 
-// Ersetzen Sie den vorherigen Event-Listener durch:
-scanButton.addEventListener('click', scanObject);
+                if (predictions.length > 0) {
+                    const topPrediction = predictions[0];
+                    console.log('Erkanntes Objekt:', topPrediction.class);
+                    await unlockContent(topPrediction.class);
+                } else {
+                    result.innerHTML = '<p>Kein Objekt erkannt. Bitte versuchen Sie es erneut.</p>';
+                }
+            } catch (error) {
+                console.error('Fehler bei der Objekterkennung:', error);
+                result.innerHTML = '<p>Fehler bei der Objekterkennung. Bitte versuchen Sie es erneut.</p>';
+            }
+        }
+
+        // Funktion zum Abrufen des exklusiven Contents
+        async function unlockContent(objectClass) {
+            try {
+                console.log('Rufe Content für Objekt ab:', objectClass);
+                const response = await fetch(`/api/unlock-content?object=${objectClass}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Erhaltene Daten:', data);
+                
+                result.innerHTML = `
+                    <h2>Objekt erkannt: ${objectClass}</h2>
+                    <h3>Exklusiver Inhalt freigeschaltet!</h3>
+                    <p>${data.content}</p>
+                    <a href="${data.url}" target="_blank">Zum exklusiven Inhalt</a>
+                `;
+            } catch (error) {
+                console.error('Fehler beim Abrufen des Inhalts:', error);
+                result.innerHTML = '<p>Fehler beim Freischalten des Inhalts. Bitte versuchen Sie es erneut.</p>';
+            }
+        }
+
+        scanButton.addEventListener('click', scanObject);
     </script>
 </body>
 </html>
