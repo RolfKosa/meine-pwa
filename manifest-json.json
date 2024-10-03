@@ -1,7 +1,7 @@
 {
     "name": "Objekt-Scanner PWA",
     "short_name": "Scanner",
-    "start_url": "/rolfkosa.github.io/",
+    "start_url": "rolfkosa.github.io/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#4CAF50",
