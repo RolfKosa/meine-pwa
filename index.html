@@ -93,7 +93,9 @@ async function scanObject() {
 async function unlockContent(objectClass) {
   try {
     // Ersetzen Sie URL durch Ihre tatsächliche API-URL
-    const response = await fetch(`https://ihre-api.com/unlock-content?object=${objectClass}`);
+    async function unlockContent(objectClass) {
+  try {
+    const response = await fetch(`/api/unlock-content?object=${objectClass}`);
     
     if (!response.ok) {
       throw new Error('Netzwerkantwort war nicht ok');
@@ -111,6 +113,7 @@ async function unlockContent(objectClass) {
     console.error('Fehler beim Abrufen des Inhalts:', error);
     result.innerHTML = '<p>Fehler beim Freischalten des Inhalts. Bitte versuchen Sie es erneut.</p>';
   }
+}
 }
 
 // Ersetzen Sie den vorherigen Event-Listener durch:
