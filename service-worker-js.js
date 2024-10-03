@@ -1,6 +1,6 @@
 const CACHE_NAME = 'object-scanner-cache-v1';
 const urlsToCache = [
-  '/',
+  'https://rolfkosa.github.io/',
   '/index.html',
   '/manifest.json',
   '/icon-192x192.png',
