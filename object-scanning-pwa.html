@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Objekt-Scanner PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #videoElement {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        #scanButton {
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #scanButton:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Objekt-Scanner</h1>
+    <video id="videoElement" autoplay playsinline></video>
+    <button id="scanButton">Objekt scannen</button>
+    <div id="result"></div>
+
+    <script>
+        // Überprüfen und registrieren des Service Workers
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => console.log('Service Worker registriert'))
+                .catch(error => console.log('Service Worker Registrierung fehlgeschlagen:', error));
+        }
+
+        // Kamerazugriff
+        const video = document.getElementById('videoElement');
+        const scanButton = document.getElementById('scanButton');
+        const result = document.getElementById('result');
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error('Fehler beim Zugriff auf die Kamera:', error);
+                result.textContent = 'Kamerazugriff nicht möglich. Bitte überprüfen Sie Ihre Berechtigungen.';
+            }
+        }
+
+        startCamera();
+
+        // Funktion zum Simulieren der Objekterkennung
+        function simulateObjectRecognition() {
+            const objects = ['Spielfigur A', 'Spielfigur B', 'Spielfigur C', 'Spielfigur D'];
+            return objects[Math.floor(Math.random() * objects.length)];
+        }
+
+        // Funktion zum Scannen des Objekts
+        async function scanObject() {
+            result.innerHTML = '<p>Scanne Objekt...</p>';
+            
+            // Simuliere Verarbeitungszeit
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const recognizedObject = simulateObjectRecognition();
+            
+            // Simuliere API-Aufruf zur Inhaltsfreischaltung
+            const content = await simulateContentUnlock(recognizedObject);
+
+            result.innerHTML = `
+                <h2>Objekt erkannt: ${recognizedObject}</h2>
+                <h3>Exklusiver Inhalt freigeschaltet!</h3>
+                <p>${content}</p>
+            `;
+        }
+
+        // Funktion zur Simulation der Inhaltsfreischaltung
+        async function simulateContentUnlock(object) {
+            const contents = {
+                'Spielfigur A': 'Exklusives Video zur Geschichte von Spielfigur A freigeschaltet!',
+                'Spielfigur B': 'Neues Mini-Spiel mit Spielfigur B jetzt verfügbar!',
+                'Spielfigur C': 'Digitaler Comic über die Abenteuer von Spielfigur C freigeschaltet!',
+                'Spielfigur D': '3D-Modell von Spielfigur D zur Ansicht bereit!'
+            };
+            return contents[object] || 'Allgemeiner exklusiver Inhalt freigeschaltet!';
+        }
+
+        scanButton.addEventListener('click', scanObject);
+    </script>
+</body>
+</html>
